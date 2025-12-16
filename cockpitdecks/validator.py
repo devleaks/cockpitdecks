@@ -1,4 +1,5 @@
 import logging
+from io import StringIO
 from pprint import pprint
 
 import cerberus
@@ -7,7 +8,7 @@ from cockpitdecks.buttons.representation import representation
 from cockpitdecks.resources.validator.schemas.button import SCHEMA_BUTTON
 from cockpitdecks.resources.validator.schemas.activations import ACTIVATION_ATTRIBUTES
 from cockpitdecks.resources.validator.schemas.representations import SCHEMA_LABEL, REPRESENTATION_NAMES, REPRESENTATION_ATTRIBUTES
-from cockpitdecks.constant import yaml, CONFIG_KW
+from cockpitdecks.constant import yaml
 
 yaml.sort_keys = False
 
@@ -15,16 +16,14 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def dict_schema(schema):
+def dict_schema(schema: dict | str) -> dict:
     return yaml.load(schema) if type(schema) is str else schema
 
 
-def recursive_items(dictionary):
-    for key, value in dictionary.items():
-        if type(value) is dict:
-            yield from recursive_items(value)
-        else:
-            yield (key, value)
+def yaml_schema(schema: dict) -> str:
+    stream = StringIO()
+    yaml.dump(schema, stream)
+    return stream.getvalue()
 
 
 class ButtonValidator(cerberus.Validator):
@@ -47,10 +46,10 @@ class ButtonValidator(cerberus.Validator):
         # self.do_once()
 
     def guess_activation_type(self, config):
-        a = config.get(CONFIG_KW.TYPE.value)
-        if a is None or a == CONFIG_KW.NONE.value:
+        a = config.get("type")
+        if a is None or a == "none":
             logger.debug("no type attribute, assuming type is none")
-            return CONFIG_KW.NONE.value
+            return "none"
         return a
 
     def guess_representation_type(self, config):
@@ -63,7 +62,7 @@ class ButtonValidator(cerberus.Validator):
             logger.debug(f"no representation in \n{config},\n assuming none, add representation: none to suppress warning message")
         else:
             logger.warning(f"multiple representations {a} found in {config}")
-        return CONFIG_KW.NONE.value
+        return "none"
 
     def validate(self, button_config) -> bool:
         button = button_config.copy()
@@ -82,16 +81,16 @@ class ButtonValidator(cerberus.Validator):
             part1 = v1.validate(document=button)
             if not part1:
                 logger.warning(f"button config {button_full_name} does not validate button schema")
-                pprint("common schema", SCHEMA_BUTTON)
-                pprint("button", button)
                 logger.warning(v1.errors)
+                pprint({"schema": SCHEMA_BUTTON})
+                pprint({"button": button})
                 logger.warning("<<<<< common schema validated with errors")
                 return False
             # logger.debug(f"button {button_full_name} validate button common schema")
         except:
             logger.error(f"button config {button_full_name} common validate error", exc_info=True)
-            pprint("common schema", SCHEMA_BUTTON)
-            pprint("button", button)
+            pprint({"schema": SCHEMA_BUTTON})
+            pprint({"button": button})
             logger.warning("<<<<< common schema validated with errors")
             return False
 
@@ -111,16 +110,16 @@ class ButtonValidator(cerberus.Validator):
                 part2 = v2.validate(document=button)
                 if not part2:
                     logger.warning(f"button config {button_full_name}: ACTIVATION does not validate schema {activation}")
-                    pprint(with_activation)
-                    pprint(button)
                     logger.warning(v2.errors)
+                    pprint({activation: with_activation})
+                    pprint({"button": button})
                     logger.warning(f"<<<<< activation {activation} validated with errors")
                     return False
                 logger.debug(f"button {button_full_name} validate activation {activation} schema")
             except:
                 logger.error(f"button config {button_full_name} ACTIVATION {activation} validate error", exc_info=True)
-                pprint(with_activation)
-                pprint(button)
+                pprint({activation: with_activation})
+                pprint({"button": button})
                 logger.warning(f"<<<<< activation {activation} validated with errors")
                 return False
 
@@ -151,18 +150,20 @@ class ButtonValidator(cerberus.Validator):
             part3 = v3.validate(document=button_representation)
             if not part3:
                 logger.warning(f"button config {button_full_name} REPRESENTATION does not validate schema {representation}")
-                pprint(representation_schema)
-                pprint(button_representation)
                 logger.warning(v3.errors)
+                pprint({representation: representation_schema})
+                pprint({representation: button_representation})
+                logger.warning(f"button:\n{self.beautify({representation: button_representation}, representation)}")
                 logger.warning(f"<<<<< representation {representation} validated with errors")
                 return False
             logger.debug(f"button {button_full_name} validate representation {representation} schema")
             logger.debug("<<<<< validated ok")
+            # logger.debug(f"button:\n{self.beautify(button_config, representation)}")
             return True
         except:
             logger.error(f"button config {button_full_name} REPRESENTATION {representation} validate error", exc_info=True)
-            pprint(button_representation)
-            pprint(button_representation)
+            pprint({representation: representation_schema})
+            pprint({representation: button_representation})
             logger.warning(f"<<<<< representation {representation} validated with errors")
 
         return False
@@ -172,11 +173,9 @@ class ButtonValidator(cerberus.Validator):
         for a in self.cockpit.all_activations.values():
             for k in a.SCHEMA.keys():
                 keys.add(k)
-            # for k, v in recursive_items(a.SCHEMA):
-            #     keys.add(k)
-        print("Keys", keys)
+        print("Keys", sorted(keys))
 
-    def beautify(self, document: dict) -> str:
+    def beautify(self, document: dict, representation: str | None = None) -> str:
         """Idea is to feed beautifier with a "normalized"
            dictionary for a button.
            Buttons are almost manually composed into a Page
@@ -188,11 +187,13 @@ class ButtonValidator(cerberus.Validator):
             dict: Beautified input
         """
 
-        def sort_dict(d):
-            for k, v in d:
+        def sort_dict(d: dict):
+            if type(d) is not dict:
+                return d
+            for k, v in d.items():
                 if type(v) is dict:
                     d[k] = sort_dict(v)
-            return sorted(d)
+            return dict(sorted(d.items()))
 
         def tr(n):
             v = document.get(n)
@@ -215,7 +216,8 @@ class ButtonValidator(cerberus.Validator):
                 tr(attr)
 
         # 3. Representation
-        data[representation] = sort_dict(document[representation])
+        if representation is not None:
+            data[representation] = sort_dict(document[representation])
 
         # output yaml string
         stream = StringIO()

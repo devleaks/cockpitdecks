@@ -12,7 +12,7 @@ from cockpitdecks.resources.color import convert_color, light_off, is_number
 from cockpitdecks.simulator import SimulatorVariable
 from cockpitdecks.strvar import TextWithVariables
 from cockpitdecks.value import Value
-from cockpitdecks.resources.validator.schemas.representations import SCHEMA_TEXT
+from cockpitdecks.resources.validator.schemas.representations import SCHEMA_TEXT, SCHEMA_VALUE
 
 from .draw import DrawBase, ICON_SIZE
 
@@ -733,10 +733,14 @@ class AnnunciatorAnimate(Annunciator):
 
     REPRESENTATION_NAME = "annunciator-animate"
 
-    SCHEMA = Annunciator.SCHEMA | {
-        "animation-speed": {"type": "float", "meta": {"label": "Speed (seconds)"}},
-        "icon-off": {"type": "icon", "meta": {"label": "Icon when off"}},
-    }
+    SCHEMA = (
+        SCHEMA_TEXT
+        | SCHEMA_VALUE
+        | {
+            "animation-speed": {"type": "float", "meta": {"label": "Speed (seconds)"}},
+            "icon-off": {"type": "icon", "meta": {"label": "Icon when off"}},
+        }
+    )
 
     def __init__(self, button: "Button"):
         button._config["annunciator"] = button._config.get("annunciator-animate")

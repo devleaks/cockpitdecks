@@ -78,6 +78,7 @@ class Activation(ActivationBase, VariableListener):
         "options": {"type": "string", "meta": {"label": "Options (!coded string!)"}},
         "view": {"type": "string", "meta": {"label": "View command"}},  # Obsolete, to be replaced by Macro
         "guard": {"type": "dict", "schema": {"color": {"type": "color"}, "dataref": {"type": "string"}, "model": {"type": "string", "allowed": ["grid"]}}},
+        "stops": {"type": "integer", "meta": {"label": "Stops"}},  # used in some representations
     }
 
     @classmethod

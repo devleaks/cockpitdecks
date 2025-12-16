@@ -24,6 +24,7 @@ SCHEMA_TEXT = {
 }
 
 SCHEMA_VALUE = {
+    "dataref": {"type": "string", "meta": {"label": "Dataref"}},
     "formula": {"type": ["string", "integer", "float", "boolean"], "meta": {"label": "Formula"}},
     "text-format": {"type": "string", "meta": {"label": "Value format"}},
 }

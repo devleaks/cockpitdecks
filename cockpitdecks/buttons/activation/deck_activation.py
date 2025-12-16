@@ -262,7 +262,7 @@ class BeginEndPress(Push):
         )
 
 
-class OnOff(Activation):
+class OnOff(DeckActivation):
     """
     Defines a On / Off push activation: Two commands are executed alternatively.
     On or Off status is determined by the number of time a button is pressed.
@@ -398,7 +398,7 @@ class OnOff(Activation):
         return "\n\r".join(a)
 
 
-class ShortOrLongpress(Activation):
+class ShortOrLongpress(DeckActivation):
     """
     Execute beginCommand while the key is pressed and endCommand when the key is released.
     """
@@ -406,7 +406,7 @@ class ShortOrLongpress(Activation):
     ACTIVATION_NAME = "short-or-long-press"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    SCHEMA = {
+    SCHEMA = DeckActivation.SCHEMA | {
         "command-short": {"type": "string", "meta": {"label": "Command short press"}, "required": True},
         "command-long": {"type": "string", "meta": {"label": "Command long press"}, "required": True},
         "long-time": {"type": "float", "meta": {"label": "Time"}},
@@ -461,7 +461,7 @@ class ShortOrLongpress(Activation):
         )
 
 
-class UpDown(Activation):
+class UpDown(DeckActivation):
     """
     Defines a button activation for a button that runs back and forth
     between 2 values like -2 1 0 1 2, or 0 1 2 3 4 3 2 1 0.
@@ -657,7 +657,7 @@ class EncoderProperties:
         return 0 if value is None else value
 
 
-class Encoder(Activation, EncoderProperties):
+class Encoder(DeckActivation, EncoderProperties):
     """
     Defines a know with stepped value.
     One command is executed when the encoder is turned clockwise one step,
