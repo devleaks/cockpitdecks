@@ -6,6 +6,7 @@ import logging
 
 from PIL import Image
 
+from cockpitdecks.resources.validator.schemas.representations import SCHEMA_VALUE
 from .draw import DrawBase
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class HardwareRepresentation(DrawBase):
     SCHEMA = DrawBase.SCHEMA | {
         "highlight-color": {"type": "color", "meta": {"label": "Highlight Color"}},
         "flash-color": {"type": "color", "meta": {"label": "Flash Color"}},
-        "flash-duration": {"type": "int", "meta": {"label": "Flash Duration (msecs)"}},
+        "flash-duration": {"type": "integer", "meta": {"label": "Flash Duration (msecs)"}},
     }
 
     def __init__(self, button: "Button"):
@@ -139,7 +140,7 @@ class VirtualLED(HardwareRepresentation):
 
     REPRESENTATION_NAME = "virtual-led"
 
-    SCHEMA = {
+    SCHEMA = SCHEMA_VALUE | {
         "color": {"type": "color", "meta": {"label": "Color"}},
         "off-color": {"type": "color", "meta": {"label": "OFF color"}},
     }

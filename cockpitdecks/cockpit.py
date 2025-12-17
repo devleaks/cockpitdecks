@@ -1257,7 +1257,12 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
     def inc(self, name: str, amount: float = 1.0, cascade: bool = False):
         # Here, it is purely statistics
         if self.sim is not None:
-            self.sim.inc_internal_variable(name=ID_SEP.join([self.get_id(), name]), amount=amount, cascade=cascade)
+            full_name = ID_SEP.join([self.get_id(), name])
+            self.sim.inc_internal_variable(name=full_name, amount=amount, cascade=cascade)
+            # debug stats...
+            v = self.sim.get_internal_variable(name=full_name)
+            if v.value % 10 == 0:
+                logger.info(f"*** cockpitdecks stats: {full_name}: {v.value}")
 
     def inspect(self, what: str | None = None):
         """
@@ -1989,15 +1994,20 @@ class Cockpit(VariableListener, InstructionFactory, InstructionPerformer, Cockpi
 
             if type(e) is str:
                 if e == "terminate":
+                    self.inc("event_count_" + e)
                     self.stop_event_loop()
                 elif e == "reload":
+                    self.inc("event_count_" + e)
                     self.reload_decks(just_do_it=True)
                 elif e.startswith("reload:"):
+                    self.inc("event_count_" + e)
                     deck = e.replace("reload:", "")
                     self.reload_deck(deck, just_do_it=True)
                 elif e == "stop":
+                    self.inc("event_count_" + e)
                     self.stop_decks(just_do_it=True)
-                self.inc("event_count_" + e)
+                else:
+                    self.inc("event_count_unknown")
                 continue
 
             try:

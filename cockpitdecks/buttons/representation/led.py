@@ -23,7 +23,7 @@ class LED(Representation):
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.LED
 
     SCHEMA = {
-        "led": {"type": "string", "meta": {"label": "LED", "default": "single"}},
+        "led": {"type": ["string", "boolean"], "meta": {"label": "LED", "default": "single"}},
     }
 
     def __init__(self, button: "Button"):

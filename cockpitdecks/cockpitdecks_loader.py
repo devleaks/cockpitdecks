@@ -366,18 +366,18 @@ class CockpitdecksLoader(CockpitBase):
         self.all_activations = {s.name(): s for s in CockpitdecksLoader.all_subclasses(Activation) if not s.name().endswith("-base")} | {
             DECK_ACTIONS.NONE.value: Activation
         }
-        if show_details:
-            logger.info(f"available activations: {', '.join(sorted(self.all_activations.keys()))}")
+        # if show_details:
+        logger.info(f"available activations: {', '.join(sorted(self.all_activations.keys()))}")
 
         self.all_representations = {s.name(): s for s in CockpitdecksLoader.all_subclasses(Representation) if not s.name().endswith("-base")} | {
             DECK_FEEDBACK.NONE.value: Representation
         }
-        if show_details:
-            logger.info(f"available representations: {', '.join(sorted(self.all_representations.keys()))}")
+        # if show_details:
+        logger.info(f"available representations: {', '.join(sorted(self.all_representations.keys()))}")
 
         self.all_hardware_representations = {s.name(): s for s in CockpitdecksLoader.all_subclasses(HardwareRepresentation)}
-        if show_details:
-            logger.info(f"available hardware representations: {', '.join(self.all_hardware_representations.keys())}")
+        # if show_details:
+        logger.info(f"available hardware representations: {', '.join(self.all_hardware_representations.keys())}")
 
         self.load_resources()
         self.scan_devices()

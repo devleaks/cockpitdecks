@@ -41,6 +41,7 @@ class WeatherBaseIcon(DrawAnimation, WeatherDataListener, VariableListener):
         "weather-font": {"type": "font", "meta": {"label": "Font"}},
         "weather-size": {"type": "integer", "meta": {"label": "Size"}},
         "weather-color": {"type": "string", "meta": {"label": "Color"}},
+        "icon-color": {"type": "string", "meta": {"label": "Color"}},
         "speed": {"type": "integer", "meta": {"label": "Refresh weather (seconds)"}},
         "refresh-location": {"type": "integer", "meta": {"label": "Refresh location (seconds)"}},
         "dataref": {"type": "string", "meta": {"label": "Dataref"}},

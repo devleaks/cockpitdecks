@@ -245,29 +245,33 @@ class Icon(IconBase):
     REPRESENTATION_NAME = "icon"
     REQUIRED_DECK_FEEDBACKS = DECK_FEEDBACK.IMAGE
 
+    # Important note:
+    #
+    # Validates:
+    #
+    # icon: icon_name  <-- this config.get("icon") gets rewritten in {icon: ...}
+    #
+    # and
+    #
+    # icon:            <-- this config.get("icon") does not get rewritten
+    #   name: icon_name
+    #   frame:
+    #      frame: frame_name
+    #      ...
+    #
+    # because config.get("icon") gets re-written in Representation class as such:
+    #   self._representation_config = button._config.get(self.name(), {})
+    #   if type(self._representation_config) is not dict:  # repres: something -> {"repres": something}
+    #       self._representation_config = {self.name(): self._representation_config}
+    #
     SCHEMA = IconBase.SCHEMA | {
-        "icon": {
-            "oneof": [
-                {
-                    "type": "string",
-                    "meta": {"label": "Icon"},
-                },
-                {
-                    "type": "dict",
-                    "schema": {
-                        "name": {"meta": {"label": "Icon"}, "type": "string"},
-                        "frame": {
-                            "schema": {
-                                "frame": {"type": "string"},
-                                "frame-size": {"schema": {"type": "integer"}, "type": "list"},
-                                "content-offset": {"schema": {"type": "integer"}, "type": "list"},
-                                "content-size": {"schema": {"type": "integer"}, "type": "list"},
-                            },
-                            "type": "dict",
-                        },
-                    },
-                },
-            ]
+        "icon": {"type": "string", "meta": {"label": "Icon"}, "excludes": "name"},
+        "name": {"type": "string", "excludes": "icon"},
+        "frame": {"type": "dict", "schema": {
+            "frame": {"type": "string"},
+            "frame-size": {"type": "list", "schema": {"type": "integer"}},
+            "content-offset": {"type": "list", "schema": {"type": "integer"}},
+            "content-size": {"type": "list", "schema": {"type": "integer"}}}
         }
     }
 

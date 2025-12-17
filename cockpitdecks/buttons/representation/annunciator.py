@@ -382,6 +382,8 @@ class Annunciator(DrawBase):
         # "style": {"type": "string", "meta": {"label": "Style"}, "lov": ["Korry", "Vivisun"]},
         # "color": {"type": "color", "meta": {"label": "Background color"}},
         # "texture": {"type": "icon", "meta": {"label": "Background texture"}},
+        "seal-color": {"meta": {"label": "Seal Color"}, "type": "color"},
+        "seal-width": {"meta": {"label": "Seal width"}, "type": "integer"},
         "annunciator-color": {"meta": {"label": "Annunciator Color"}, "type": "color"},
         "annunciator-style": {"meta": {"label": "Annunciator Style"}, "type": "string", "allowed": ["Korry", "K", "Vivisun", "V"]},
         "annunciator-texture": {"meta": {"label": "Annunciator Texture"}, "type": "icon"},

@@ -11,6 +11,11 @@ SCHEMA_LABEL = {
     "label-font": {"type": "font", "meta": {"label": "Lbl font", "default": "DIN.ttf"}},
     "label-position": {"type": "string", "meta": {"label": "Lbl position"}, "allowed": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
     "label-color": {"type": "color", "meta": {"label": "Lbl color"}},
+    "vu": {"type": ["string", "integer"], "meta": {"label": "VU"}},
+    "vu-size": {"type": "integer", "meta": {"label": "VU size"}},
+    "vu-font": {"type": "font", "meta": {"label": "VU font", "default": "DIN.ttf"}},
+    "vu-position": {"type": "string", "meta": {"label": "VU position"}, "allowed": ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]},
+    "vu-color": {"type": "color", "meta": {"label": "VU color"}},
 }
 
 SCHEMA_TEXT = {

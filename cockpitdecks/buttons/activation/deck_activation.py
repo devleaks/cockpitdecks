@@ -667,7 +667,26 @@ class Encoder(DeckActivation, EncoderProperties):
     ACTIVATION_NAME = "encoder"
     REQUIRED_DECK_ACTIONS = DECK_ACTIONS.ENCODER
 
-    SCHEMA = Activation.SCHEMA | {"stops": {"type": "integer", "meta": {"label": "Number of stops", "default": 2}}, "commands": SCHEMA_COMMANDS}
+    SCHEMA = Activation.SCHEMA | {
+        "value-min": {
+            "type": "float",
+            "meta": {"label": "Minimum value"},
+        },
+        "value-max": {
+            "type": "float",
+            "meta": {"label": "Maximum value"},
+        },
+        "step": {
+            "type": "float",
+            "meta": {"label": "Step value"},
+        },
+        "value-step": {
+            "type": "float",
+            "meta": {"label": "Step value"},
+        },
+        "stops": {"type": "integer", "meta": {"label": "Number of stops", "default": 2}},
+        "commands": SCHEMA_COMMANDS,
+    }
 
     def __init__(self, button: "Button"):
         Activation.__init__(self, button=button)
@@ -1323,6 +1342,10 @@ class Slider(Activation):  # Cursor?
             "meta": {"label": "Maximum value"},
         },
         "step": {
+            "type": "float",
+            "meta": {"label": "Step value"},
+        },
+        "value-step": {
             "type": "float",
             "meta": {"label": "Step value"},
         },

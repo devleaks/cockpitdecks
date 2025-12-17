@@ -32,7 +32,7 @@ class CockpitActivation(Activation):
         Activation.__init__(self, button=button)
 
 
-class LoadPage(Activation):
+class LoadPage(CockpitActivation):
     """
     Defines a Page change activation.
     """
@@ -42,13 +42,13 @@ class LoadPage(Activation):
 
     KW_BACKPAGE = "back"
 
-    SCHEMA = {
+    SCHEMA = SCHEMA = CockpitActivation.SCHEMA | {
         "page": {"type": "string", "required": True, "meta": {"label": "Page", "default": "back"}},
         "deck": {"type": "string", "meta": {"label": "Remote deck"}},
     }
 
     def __init__(self, button: "Button"):
-        Activation.__init__(self, button=button)
+        CockpitActivation.__init__(self, button=button)
 
         # Activation arguments
         self.page = self._config.get("page", LoadPage.KW_BACKPAGE)  # default is to go to previously loaded page, if any
@@ -81,7 +81,7 @@ class LoadPage(Activation):
         return "\n\r".join([f"The button loads page {self.page} on {deck}."])
 
 
-class Reload(Activation):
+class Reload(CockpitActivation):
     """
     Reloads all decks.
     """
@@ -89,12 +89,12 @@ class Reload(Activation):
     ACTIVATION_NAME = "reload"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    SCHEMA = {
+    SCHEMA = CockpitActivation.SCHEMA | {
         "deck": {"type": "string", "meta": {"label": "Deck"}},
     }
 
     def __init__(self, button: "Button"):
-        Activation.__init__(self, button=button)
+        CockpitActivation.__init__(self, button=button)
         self.deck = self._config.get("deck")
         self.instruction = None
         if self.deck is None:
@@ -133,7 +133,7 @@ class ChangeTheme(Activation):
     }
 
     def __init__(self, button: "Button"):
-        Activation.__init__(self, button=button)
+        CockpitActivation.__init__(self, button=button)
 
         # Activation arguments
         self.theme = self._config.get("theme")
@@ -161,7 +161,7 @@ class ChangeTheme(Activation):
         return "\n\r".join([f"The button switches between dark and light (night and day) themes and reload pages."])
 
 
-class Inspect(Activation):
+class Inspect(CockpitActivation):
     """
     Inspect all decks.
     """
@@ -169,7 +169,7 @@ class Inspect(Activation):
     ACTIVATION_NAME = "inspect"
     REQUIRED_DECK_ACTIONS = [DECK_ACTIONS.PRESS, DECK_ACTIONS.LONGPRESS, DECK_ACTIONS.PUSH]
 
-    SCHEMA = {
+    SCHEMA = CockpitActivation.SCHEMA | {
         "what": {
             "type": "string",
             "allowed": [
@@ -192,7 +192,7 @@ class Inspect(Activation):
     }
 
     def __init__(self, button: "Button"):
-        Activation.__init__(self, button=button)
+        CockpitActivation.__init__(self, button=button)
 
         # Activation arguments
         self.what = self._config.get("what", "status")
@@ -218,7 +218,7 @@ class Inspect(Activation):
         return "\n\r".join([f"The button displays '{self.what}' information about each cockpit, deck, page and/or button."])
 
 
-class Stop(Activation):
+class Stop(CockpitActivation):
     """
     Stops all decks.
     """
@@ -229,7 +229,7 @@ class Stop(Activation):
     SCHEMA = {}
 
     def __init__(self, button: "Button"):
-        Activation.__init__(self, button=button)
+        CockpitActivation.__init__(self, button=button)
         self.instruction = self.cockpit.instruction_factory(name=INSTRUCTION_PREFIX + self.ACTIVATION_NAME, instruction_block={})
 
     def activate(self, event) -> bool:
@@ -252,7 +252,7 @@ class Stop(Activation):
         return "\n\r".join(["The button stops Cockpitdecks and terminates gracefully."])
 
 
-class StartSimulator(Activation):
+class StartSimulator(CockpitActivation):
     """
     Starts local copy of simulator software if not running.
     Currently only works on MacOS.
@@ -264,7 +264,7 @@ class StartSimulator(Activation):
     SCHEMA = {}
 
     def __init__(self, button: "Button"):
-        Activation.__init__(self, button=button)
+        CockpitActivation.__init__(self, button=button)
 
     def activate(self, event) -> bool:
         if not self.can_handle(event):

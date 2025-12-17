@@ -1,3 +1,4 @@
+import os
 import logging
 from pprint import pprint
 
@@ -26,6 +27,26 @@ def yaml_schema(schema: dict) -> str:
     return stream.getvalue()
 
 
+class ConfigFileValidator(cerberus.Validator):
+
+    def __init__(self):
+        base_dir = os.path.abspath(os.path.dirname(__file__))
+        for f in ["aircraft-config", "decktype", "layout-config", "page-config"]:
+            fn = os.path.join(base_dir, f + ".yaml")
+            with open(fn, "r") as fp:
+                schema = yaml.load(fp)
+                cerberus.schema_registry.add(f, schema)
+        logger.info(f"{type(self).__name__} loaded configuration file validation schemas {','.join(cerberus.schema_registry.all().keys())}")
+
+    def validate(self, config, schema: str) -> bool:
+        if schema == "page":
+            page = config.copy()
+            if "buttons" in page:
+                del page["buttons"]
+            return self.validate(page, "page-config")
+        v = cerberus.Validator(schema=schema)
+        return v.validate(config)
+
 class ButtonValidator(cerberus.Validator):
 
     def __init__(self, cockpit, deck, page):
@@ -42,6 +63,7 @@ class ButtonValidator(cerberus.Validator):
 
         # Experimental:
         cerberus.schema_registry.add("button", SCHEMA_BUTTON)
+        logger.info(f"{type(self).__name__} loaded button validation schemas {','.join(cerberus.schema_registry.all().keys())}")
 
         # self.do_once()
 
@@ -53,9 +75,8 @@ class ButtonValidator(cerberus.Validator):
         return a
 
     def guess_representation_type(self, config):
-        all_representations = self.cockpit.all_representations
-        all_hardware_representations = self.cockpit.all_hardware_representations
-        a = [r for r in all_representations.keys() if r in config and r not in all_hardware_representations.keys()]
+        all_representations = self.cockpit.all_representations | self.cockpit.all_hardware_representations
+        a = [r for r in all_representations.keys() if r in config]
         if len(a) == 1:
             return a[0]
         elif len(a) == 0:
@@ -82,21 +103,22 @@ class ButtonValidator(cerberus.Validator):
             if not part1:
                 logger.warning(f"button config {button_full_name} does not validate button schema")
                 logger.warning(v1.errors)
-                pprint({"schema": SCHEMA_BUTTON})
                 pprint({"button": button})
+                pprint({"schema": SCHEMA_BUTTON})
                 logger.warning("<<<<< common schema validated with errors")
                 return False
             # logger.debug(f"button {button_full_name} validate button common schema")
         except:
             logger.error(f"button config {button_full_name} common validate error", exc_info=True)
-            pprint({"schema": SCHEMA_BUTTON})
             pprint({"button": button})
+            pprint({"schema": SCHEMA_BUTTON})
             logger.warning("<<<<< common schema validated with errors")
             return False
 
         # 2. Button common schema with activation specific
         # drop representation part
-        allow_unknown = {"type": ["string", "dict"], "allowed": REPRESENTATION_NAMES + REPRESENTATION_ATTRIBUTES}
+        # representation: False => No representation, no warning message
+        allow_unknown = {"type": ["string", "dict", "boolean"], "allowed": REPRESENTATION_NAMES + REPRESENTATION_ATTRIBUTES + [False]}
         if representation in button:
             del button[representation]
             allow_unknown = False
@@ -111,15 +133,15 @@ class ButtonValidator(cerberus.Validator):
                 if not part2:
                     logger.warning(f"button config {button_full_name}: ACTIVATION does not validate schema {activation}")
                     logger.warning(v2.errors)
-                    pprint({activation: with_activation})
                     pprint({"button": button})
+                    pprint({activation: with_activation})
                     logger.warning(f"<<<<< activation {activation} validated with errors")
                     return False
                 logger.debug(f"button {button_full_name} validate activation {activation} schema")
             except:
                 logger.error(f"button config {button_full_name} ACTIVATION {activation} validate error", exc_info=True)
-                pprint({activation: with_activation})
                 pprint({"button": button})
+                pprint({activation: with_activation})
                 logger.warning(f"<<<<< activation {activation} validated with errors")
                 return False
 
@@ -137,13 +159,18 @@ class ButtonValidator(cerberus.Validator):
             logger.debug(f"<<<<< representation {representation} validated with errors")
             return False
 
+        # Representation class has this:
+        # self._representation_config = button._config.get(self.name(), {})
+        # if type(self._representation_config) is not dict:  # repres: something -> {"repres": something}
+        #     self._representation_config = {self.name(): self._representation_config}
+        # s owe have to do the same here:
         if type(button_representation) is not dict:
             button_representation = {representation: button_config[representation]}
-        else:
-            if representation in ["icon"]:
-                button_representation = {representation: button_config[representation]}
-                # print(">>>", button_representation)
-                # At one point, rewrite all representation schema like representayion_name: dict
+        # else:
+        #     if representation in ["icon"]:
+        #         button_representation = {representation: button_config[representation]}
+        #         # print(">>>", button_representation)
+        #         # At one point, rewrite all representation schema like representayion_name: dict
 
         try:
             v3 = cerberus.Validator(schema=representation_schema)
@@ -151,9 +178,9 @@ class ButtonValidator(cerberus.Validator):
             if not part3:
                 logger.warning(f"button config {button_full_name} REPRESENTATION does not validate schema {representation}")
                 logger.warning(v3.errors)
-                pprint({representation: representation_schema})
                 pprint({representation: button_representation})
-                logger.warning(f"button:\n{self.beautify({representation: button_representation}, representation)}")
+                pprint({representation: representation_schema})
+                # logger.warning(f"button:\n{self.beautify({representation: button_representation}, representation)}")
                 logger.warning(f"<<<<< representation {representation} validated with errors")
                 return False
             logger.debug(f"button {button_full_name} validate representation {representation} schema")
@@ -162,8 +189,8 @@ class ButtonValidator(cerberus.Validator):
             return True
         except:
             logger.error(f"button config {button_full_name} REPRESENTATION {representation} validate error", exc_info=True)
-            pprint({representation: representation_schema})
             pprint({representation: button_representation})
+            pprint({representation: representation_schema})
             logger.warning(f"<<<<< representation {representation} validated with errors")
 
         return False
