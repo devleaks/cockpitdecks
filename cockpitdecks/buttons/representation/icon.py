@@ -267,12 +267,15 @@ class Icon(IconBase):
     SCHEMA = IconBase.SCHEMA | {
         "icon": {"type": "string", "meta": {"label": "Icon"}, "excludes": "name"},
         "name": {"type": "string", "excludes": "icon"},
-        "frame": {"type": "dict", "schema": {
-            "frame": {"type": "string"},
-            "frame-size": {"type": "list", "schema": {"type": "integer"}},
-            "content-offset": {"type": "list", "schema": {"type": "integer"}},
-            "content-size": {"type": "list", "schema": {"type": "integer"}}}
-        }
+        "frame": {
+            "type": "dict",
+            "schema": {
+                "frame": {"type": "string"},
+                "frame-size": {"type": "list", "schema": {"type": "integer"}},
+                "content-offset": {"type": "list", "schema": {"type": "integer"}},
+                "content-size": {"type": "list", "schema": {"type": "integer"}},
+            },
+        },
     }
 
     def __init__(self, button: "Button"):
@@ -280,7 +283,7 @@ class Icon(IconBase):
         deck = self.button.deck
         self.icon = None
         self.frame = None
-        config_icon = self._representation_config.get(self.REPRESENTATION_NAME)
+        config_icon = self._config.get(self.REPRESENTATION_NAME)
         if type(config_icon) is str:  # icon: filename
             self.icon = deck.cockpit.get_icon(config_icon)
             self.frame = self._config.get(CONFIG_KW.FRAME.value)
